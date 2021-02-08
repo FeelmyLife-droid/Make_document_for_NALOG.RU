@@ -1,4 +1,3 @@
-#!/usr/bin/python
 import tempfile
 from asyncio.tasks import shield
 from datetime import datetime
@@ -94,15 +93,7 @@ class File:
     async def convert_to_tiff(self, file):
 
         file_pdf_dir = join(self.path, file, f'РЕШЕНИЕ_{file}.pdf')
-        with tempfile.TemporaryDirectory() as path:
-            images_from_path = convert_from_path(
-                file_pdf_dir,
-                output_folder=path,
-                last_page=1,
-                dpi=300,
-                first_page=0,
-                grayscale=True
-            )
+        images_from_path = convert_from_path(file_pdf_dir, output_folder=join(self.path, file), dpi=300, grayscale=True)
         base_filename = splitext(basename(file_pdf_dir))[0] + '.tiff'
         tiff_dir = join(self.path, file, base_filename)
         for page in images_from_path:
@@ -113,7 +104,8 @@ class File:
         for i_dict in range(self.count):
             context = await self.get_context(self.read_file[i_dict])
             docx = await self.make_resheie(context=context, image=i_dict)
-            await self.convert_to_tiff(await self.convert_to_pdf(docx))
+            pdf = await shield(self.convert_to_pdf(docx))
+            await self.convert_to_tiff(pdf)
             if self.read_file[i_dict]['ИНН2']:
                 docx2 = await self.make_resheie(context=context, image=i_dict, file='Prikaz.docx')
                 await self.convert_to_pdf(docx2)
